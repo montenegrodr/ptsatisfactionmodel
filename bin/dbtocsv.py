@@ -11,6 +11,13 @@ window_size = 1000
 def main(args):
     db = mysql.connect(host=args.host, user=args.user, passwd=args.password)
 
+    def fieldnames():
+        query = f'DESCRIBE reclameaqui.complaint;'
+        cur = db.cursor()
+        cur.execute(query)
+        results = cur.fetchall()
+        return [c[0] for c in results]
+
     def windows_query():
         for c in count():
             lb = c * window_size
@@ -20,17 +27,34 @@ def main(args):
             cur = db.cursor()
             cur.execute(query)
             results = cur.fetchall()
-            header = [d[0] for d in cur.description]
             if not results:
                 break
-            yield header
             for r in results:
-                yield r
+                yield {x: str(y) for x, y in zip(columns, r)}
 
-    with open('input.csv', 'w') as h:
-        writer = csv.writer(h)
+    def normalize_values():
+        def f(v):
+            if v == 10:
+                return 'satisfied'
+            elif v == 5:
+                return 'neutral'
+            elif v == 0:
+                return 'not satisfied'
+            else:
+                return False
+
         for result in windows_query():
-            writer.writerow(list(map(str, result)))
+            result['rate'] = f(int(result['rate']))
+            if result['rate'] == False:
+                continue
+            yield result
+
+    columns = fieldnames()
+    with open('input.csv', 'w') as h:
+        writer = csv.DictWriter(h, columns)
+        writer.writeheader()
+        for result in normalize_values():
+            writer.writerow(result)
 
 
 def parse_args():
