@@ -9,7 +9,7 @@ from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.externals import joblib
-
+from sklearn.linear_model import SGDClassifier
 
 class Data(object):
     def __init__(self, file_source):
@@ -53,6 +53,11 @@ class Classifier(object):
         self.name = type(self).__name__
         self.clf = None
         self.result = None
+
+    def run(self):
+        self.train()
+        self.save()
+        self.test()
 
     def train(self):
         print('{} training...'.format(self.name))
@@ -111,12 +116,51 @@ class MultinomialNaiveBayes(Classifier):
         }
 
 
+class SVM(Classifier):
+    def __init__(self, data, storage):
+        super(SVM, self).__init__(data, storage)
+        self.transformer = None
+        self.count_vect = None
+
+    def train(self):
+        super(SVM, self).train()
+        self.count_vect = CountVectorizer()
+        self.transformer = TfidfTransformer()
+        train_counts = self.count_vect.fit_transform(self.data.trainset())
+        train_tfidf = self.transformer.fit_transform(train_counts)
+        self.clf = SGDClassifier().fit(
+            train_tfidf, self.data.trainset_target())
+
+    def save(self):
+        super(SVM, self).save()
+        joblib.dump(self.clf, join(
+            self.storage, '{}_model.pkl'.format(self.name)))
+        joblib.dump(self.transformer, join(
+            self.storage, '{}_transformer.pkl'.format(self.name)))
+        joblib.dump(self.count_vect, join(
+            self.storage, '{}_count_vect.pkl'.format(self.name)))
+
+    def test(self):
+        super(SVM, self).test()
+        test_counts = self.count_vect.transform(self.data.testset())
+        test_tfidf = self.transformer.transform(test_counts)
+        predicted = self.clf.predict(test_tfidf)
+
+        precision, recall, f_score, true_sum = \
+            precision_recall_fscore_support(self.data.testset_target(), predicted, average='micro')
+        accuracy = accuracy_score(self.data.testset_target(), predicted)
+        self.result = {
+            'precision': precision,
+            'recall': recall,
+            'f_score': f_score,
+            'true_sum': true_sum,
+            'accuracy': accuracy
+        }
+
+
 class Classifiers(Enum):
     MNB = MultinomialNaiveBayes
-
-
-def record(result):
-    print(result)
+    SVM = SVM
 
 
 def main(args):
@@ -124,7 +168,7 @@ def main(args):
     for c in Classifiers:
         clf = c.value(data, args.storage)
         clf.run()
-        record(clf.result)
+        print(clf.result)
 
 
 def parse_args():
