@@ -1,5 +1,4 @@
 import csv
-import argparse
 from enum import Enum
 from os.path import join
 from sklearn.metrics import precision_recall_fscore_support
@@ -10,6 +9,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.externals import joblib
 from sklearn.linear_model import SGDClassifier
+
 
 class Data(object):
     def __init__(self, file_source):
@@ -161,22 +161,3 @@ class SVM(Classifier):
 class Classifiers(Enum):
     MNB = MultinomialNaiveBayes
     SVM = SVM
-
-
-def main(args):
-    data = Data(args.input)
-    for c in Classifiers:
-        clf = c.value(data, args.storage)
-        clf.run()
-        print(clf.result)
-
-
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--input')
-    parser.add_argument('--storage')
-    return parser.parse_args()
-
-
-if __name__ == '__main__':
-    main(parse_args())
