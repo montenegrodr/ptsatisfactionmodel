@@ -1,6 +1,6 @@
 import csv
 from enum import Enum
-from os.path import join
+from os.path import join, exists
 from sklearn.metrics import precision_recall_fscore_support
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
@@ -46,15 +46,16 @@ class Data(object):
 
 
 class Classifier(object):
-    def __init__(self, data, storage):
+    def __init__(self, storage):
         print('Starting {} work'.format(type(self).__name__))
-        self.data = data
         self.storage = storage
         self.name = type(self).__name__
         self.clf = None
         self.result = None
+        self.data = None
 
-    def run(self):
+    def build(self, data):
+        self.data = data
         self.train()
         self.save()
         self.test()
@@ -68,17 +69,22 @@ class Classifier(object):
     def test(self):
         print('{} testing model...'.format(self.name))
 
+    def predict(self):
+        pass
+
 
 class MultinomialNaiveBayes(Classifier):
-    def __init__(self, data, storage):
-        super(MultinomialNaiveBayes, self).__init__(data, storage)
+    def __init__(self, storage):
+        super(MultinomialNaiveBayes, self).__init__(storage)
         self.transformer = None
         self.count_vect = None
-
-    def run(self):
-        self.train()
-        self.save()
-        self.test()
+        self.model_path = join(
+            self.storage, '{}_model.pkl'.format(self.name))
+        self.transformer_path = join(
+            self.storage, '{}_transformer.pkl'.format(self.name))
+        self.count_vect_path = join(
+            self.storage, '{}_count_vect.pkl'.format(self.name))
+        self._load()
 
     def train(self):
         super(MultinomialNaiveBayes, self).train()
@@ -100,9 +106,7 @@ class MultinomialNaiveBayes(Classifier):
 
     def test(self):
         super(MultinomialNaiveBayes, self).test()
-        test_counts = self.count_vect.transform(self.data.testset())
-        test_tfidf = self.transformer.transform(test_counts)
-        predicted = self.clf.predict(test_tfidf)
+        predicted = self.predict(self.data.testset())
 
         precision, recall, f_score, true_sum = \
             precision_recall_fscore_support(self.data.testset_target(), predicted, average='micro')
@@ -115,12 +119,32 @@ class MultinomialNaiveBayes(Classifier):
             'accuracy': accuracy
         }
 
+    def _load(self):
+        if exists(self.model_path) and \
+                exists(self.transformer_path) and \
+                exists(self.count_vect_path):
+            self.clf = joblib.load(self.model_path)
+            self.transformer = joblib.load(self.transformer_path)
+            self.count_vect = joblib.load(self.count_vect_path)
+
+    def predict(self, texts):
+        test_counts = self.count_vect.transform(texts)
+        test_tfidf = self.transformer.transform(test_counts)
+        return self.clf.predict(test_tfidf)
+
 
 class SVM(Classifier):
-    def __init__(self, data, storage):
-        super(SVM, self).__init__(data, storage)
+    def __init__(self, storage):
+        super(SVM, self).__init__(storage)
         self.transformer = None
         self.count_vect = None
+        self.model_path = join(
+            self.storage, '{}_model.pkl'.format(self.name))
+        self.transformer_path = join(
+            self.storage, '{}_transformer.pkl'.format(self.name))
+        self.count_vect_path = join(
+            self.storage, '{}_count_vect.pkl'.format(self.name))
+        self._load()
 
     def train(self):
         super(SVM, self).train()
@@ -133,18 +157,13 @@ class SVM(Classifier):
 
     def save(self):
         super(SVM, self).save()
-        joblib.dump(self.clf, join(
-            self.storage, '{}_model.pkl'.format(self.name)))
-        joblib.dump(self.transformer, join(
-            self.storage, '{}_transformer.pkl'.format(self.name)))
-        joblib.dump(self.count_vect, join(
-            self.storage, '{}_count_vect.pkl'.format(self.name)))
+        joblib.dump(self.clf, self.model_path)
+        joblib.dump(self.transformer, self.transformer_path)
+        joblib.dump(self.count_vect, self.count_vect_path)
 
     def test(self):
         super(SVM, self).test()
-        test_counts = self.count_vect.transform(self.data.testset())
-        test_tfidf = self.transformer.transform(test_counts)
-        predicted = self.clf.predict(test_tfidf)
+        predicted = self.predict(self.data.testset())
 
         precision, recall, f_score, true_sum = \
             precision_recall_fscore_support(self.data.testset_target(), predicted, average='micro')
@@ -157,7 +176,27 @@ class SVM(Classifier):
             'accuracy': accuracy
         }
 
+    def _load(self):
+        if exists(self.model_path) and \
+           exists(self.transformer_path) and \
+           exists(self.count_vect_path):
+            self.clf = joblib.load(self.model_path)
+            self.transformer = joblib.load(self.transformer_path)
+            self.count_vect = joblib.load(self.count_vect_path)
+
+    def predict(self, texts):
+        test_counts = self.count_vect.transform(texts)
+        test_tfidf = self.transformer.transform(test_counts)
+        return self.clf.predict(test_tfidf)
+
 
 class Classifiers(Enum):
     MNB = MultinomialNaiveBayes
     SVM = SVM
+
+    @staticmethod
+    def factory(model):
+        if model == 'svm':
+            return SVM
+        elif model == 'mnb':
+            return MultinomialNaiveBayes

@@ -5,8 +5,8 @@ import ptsatmodel.classifiers as classifiers
 def main(args):
     data = classifiers.Data(args.input)
     for c in classifiers.Classifiers:
-        clf = c.value(data, args.storage)
-        clf.run()
+        clf = c.value(args.storage)
+        clf.build(data)
         print(clf.result)
 
 

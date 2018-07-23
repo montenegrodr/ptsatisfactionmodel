@@ -15,3 +15,9 @@ $(INPUT):
 .PHONY: benchmark
 benchmark: build
 	python ptsatmodel/benchmarking.py --input $(INPUT) --storage $(STORAGE)
+
+.PHONY: run
+run-$(MODEL):
+	python ptsatmodel/run.py --model $(MODEL) --storage $(STORAGE)
+
+models/SVM_model.pkl: benchmark
