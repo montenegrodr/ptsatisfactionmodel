@@ -25,7 +25,7 @@ def main(args):
     clf = Classifiers.factory(args.model)
     model = clf(args.storage)
     app.add_url_rule('/', view_func=Model.as_view('/', model))
-    app.run('0.0.0.0', 5000)
+    app.run('0.0.0.0', 8000)
 
 
 def parse_args():

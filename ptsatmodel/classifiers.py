@@ -47,7 +47,7 @@ class Data(object):
 
 class Classifier(object):
     def __init__(self, storage):
-        print('Starting {} work'.format(type(self).__name__))
+        print('Starting {} model'.format(type(self).__name__))
         self.storage = storage
         self.name = type(self).__name__
         self.clf = None

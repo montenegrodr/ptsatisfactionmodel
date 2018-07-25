@@ -3,6 +3,7 @@ USER     = root
 PASSWORD = root
 INPUT    = input.csv
 STORAGE  = models
+MODEL    = svm
 
 .PHONY: build
 build:  models/SVM_model.pkl models/MNB_model.pkl
