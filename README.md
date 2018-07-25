@@ -23,9 +23,7 @@ $ curl http://localhost:8000/ -d "text=Atendentes super atenciosos."
 "satisfied"
 ```
 
-<aside class="notice">
-Note: O servico nao esta "production ready"
-</aside>
+:warning: O servico nao esta "production ready"
 
 
  ### TODO
