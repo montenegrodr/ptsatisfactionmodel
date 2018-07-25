@@ -6,7 +6,7 @@ STORAGE  = models
 MODEL    = svm
 
 .PHONY: build
-build:  models/SVM_model.pkl models/MNB_model.pkl
+build:  models/SVM_model.pkl models/MultinomialNaiveBayes_model.pkl
 	pip install -r requirements.txt
 	pip install -e .
 
@@ -18,12 +18,12 @@ train:
 	python ptsatmodel/benchmarking.py --input $(INPUT) --storage $(STORAGE)
 
 .PHONY: run
-run:
+run: build
 	python ptsatmodel/run.py --model $(MODEL) --storage $(STORAGE)
 
 models/SVM_model.pkl:
 	train
 
-models/MNB_model.pkl:
+models/MultinomialNaiveBayes_model.pkl:
 	train
 
